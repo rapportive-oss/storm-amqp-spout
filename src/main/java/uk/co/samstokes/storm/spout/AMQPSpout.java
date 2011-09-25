@@ -141,7 +141,12 @@ public class AMQPSpout implements IRichSpout {
         amqpChannel.queueBind(queue, amqpExchange, amqpRoutingKey);
 
         this.amqpConsumer = new QueueingConsumer(amqpChannel);
-        this.amqpConsumerTag = amqpChannel.basicConsume(queue, amqpConsumer); // TODO acking?
+        /*
+         * This tells the consumer to auto-ack every message as soon as we get
+         * it.  For reliability, we probably want to manually ack or reject
+         * (e.g. in ack() and fail()).
+         */
+        this.amqpConsumerTag = amqpChannel.basicConsume(queue, true, amqpConsumer);
     }
 
 
