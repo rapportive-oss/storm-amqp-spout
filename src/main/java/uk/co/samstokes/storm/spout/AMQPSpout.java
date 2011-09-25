@@ -7,14 +7,11 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.QueueingConsumer;
+import backtype.storm.spout.Scheme;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichSpout;
 import backtype.storm.topology.OutputFieldsDeclarer;
-
-import backtype.storm.tuple.Fields;
-import backtype.storm.tuple.Values;
-
 
 public class AMQPSpout implements IRichSpout {
     private static final long serialVersionUID = 11258942292629263L;
@@ -29,6 +26,8 @@ public class AMQPSpout implements IRichSpout {
     private final String amqpExchange;
     private final String amqpRoutingKey;
 
+    private final Scheme serialisationScheme;
+
     private transient Connection amqpConnection;
     private transient Channel amqpChannel;
     private transient QueueingConsumer amqpConsumer;
@@ -37,7 +36,7 @@ public class AMQPSpout implements IRichSpout {
     private SpoutOutputCollector collector;
 
 
-    public AMQPSpout(String host, int port, String username, String password, String vhost, String exchange, String routingKey) {
+    public AMQPSpout(String host, int port, String username, String password, String vhost, String exchange, String routingKey, Scheme scheme) {
         this.amqpHost = host;
         this.amqpPort = port;
         this.amqpUsername = username;
@@ -45,6 +44,8 @@ public class AMQPSpout implements IRichSpout {
         this.amqpVhost = vhost;
         this.amqpExchange = exchange;
         this.amqpRoutingKey = routingKey;
+
+        this.serialisationScheme = scheme;
     }
 
 
@@ -96,9 +97,7 @@ public class AMQPSpout implements IRichSpout {
                     final QueueingConsumer.Delivery delivery = amqpConsumer.nextDelivery(WAIT_FOR_NEXT_MESSAGE);
                     if (delivery == null) break;
                     final byte[] message = delivery.getBody();
-                    // TODO do something more intelligent
-                    final String todoHack = new String(message);
-                    collector.emit(new Values(todoHack));
+                    collector.emit(serialisationScheme.deserialize(message));
                 } catch (InterruptedException e) {
                     break;
                 }
@@ -164,8 +163,7 @@ public class AMQPSpout implements IRichSpout {
 
     @Override
     public void declareOutputFields(OutputFieldsDeclarer declarer) {
-        // TODO do something more intelligent
-        declarer.declare(new Fields("todoHack"));
+        declarer.declare(serialisationScheme.getOutputFields());
     }
 
 

@@ -6,6 +6,7 @@ import backtype.storm.LocalCluster;
 
 import backtype.storm.topology.TopologyBuilder;
 
+import uk.co.samstokes.storm.scheme.JSONScheme;
 import uk.co.samstokes.storm.spout.AMQPSpout;
 
 public class TestTopology {
@@ -21,7 +22,8 @@ public class TestTopology {
               args[3],
               args[4],
               args[5],
-              args[6]
+              args[6],
+              new JSONScheme()
               ));
 
         final Config config = new Config();
