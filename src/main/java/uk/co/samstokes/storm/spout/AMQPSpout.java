@@ -136,6 +136,18 @@ public class AMQPSpout implements IRichSpout {
 
         amqpChannel.exchangeDeclarePassive(amqpExchange);
 
+        /*
+         * This declares an exclusive, auto-delete, server-named queue.  It'll
+         * be deleted when this connection closes, e.g. if the spout worker
+         * process gets restarted.  That means we won't receive messages sent
+         * before the connection was opened or after it was closed, which may
+         * not be the desired behaviour.
+         *
+         * To avoid this, we want a named queue that can stick around while we
+         * get rebooted.  That's hard to do without risking clashing with queue
+         * names on the server.  Maybe we should have an overridable method for
+         * declaring the queue?
+         */
         final String queue = amqpChannel.queueDeclare().getQueue();
 
         amqpChannel.queueBind(queue, amqpExchange, amqpRoutingKey);
