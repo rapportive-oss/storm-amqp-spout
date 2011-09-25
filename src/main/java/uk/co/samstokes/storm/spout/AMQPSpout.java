@@ -32,6 +32,7 @@ public class AMQPSpout implements IRichSpout {
     private transient Connection amqpConnection;
     private transient Channel amqpChannel;
     private transient QueueingConsumer amqpConsumer;
+    private transient String amqpConsumerTag;
 
     private SpoutOutputCollector collector;
 
@@ -58,6 +59,10 @@ public class AMQPSpout implements IRichSpout {
     public void close() {
         try {
             if (amqpChannel != null) {
+              if (amqpConsumerTag != null) {
+                  amqpChannel.basicCancel(amqpConsumerTag);
+              }
+
               amqpChannel.close();
             }
         } catch (IOException e) {
@@ -136,7 +141,7 @@ public class AMQPSpout implements IRichSpout {
         amqpChannel.queueBind(queue, amqpExchange, amqpRoutingKey);
 
         this.amqpConsumer = new QueueingConsumer(amqpChannel);
-        amqpChannel.basicConsume(queue, amqpConsumer); // TODO acking?
+        this.amqpConsumerTag = amqpChannel.basicConsume(queue, amqpConsumer); // TODO acking?
     }
 
 
