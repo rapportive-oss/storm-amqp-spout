@@ -29,6 +29,11 @@
           <descriptorRefs>
             <descriptorRef>jar-with-dependencies</descriptorRef>
           </descriptorRefs>
+          <archive>
+            <manifest>
+              <mainClass>uk.co.samstokes.storm.TestTopology</mainClass>
+            </manifest>
+          </archive>
         </configuration>
         <executions>
           <execution>
