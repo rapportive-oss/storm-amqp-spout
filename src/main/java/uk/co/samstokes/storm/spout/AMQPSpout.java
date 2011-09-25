@@ -146,6 +146,12 @@ public class AMQPSpout implements IRichSpout {
          * get rebooted.  That's hard to do without risking clashing with queue
          * names on the server.  Maybe we should have an overridable method for
          * declaring the queue?
+         *
+         * This actually affects isDistributed() - if we have a named queue,
+         * then several workers can share the same queue, and the broker will
+         * round-robin between them.  If we use server-named queues, each
+         * worker will get its own, so the broker will broadcast to all of them
+         * instead.
          */
         final String queue = amqpChannel.queueDeclare().getQueue();
 
@@ -167,9 +173,13 @@ public class AMQPSpout implements IRichSpout {
     }
 
 
+    /**
+     * Currently this spout can't be distributed, because each call to open()
+     * creates a new queue and binds it to the exchange, so if there were
+     * multiple workers they would each receive every message.
+     */
     @Override
     public boolean isDistributed() {
-        // TODO Auto-generated method stub
         return false;
     }
 }
