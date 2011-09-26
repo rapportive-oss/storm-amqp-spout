@@ -13,16 +13,16 @@ import backtype.storm.spout.Scheme;
 import backtype.storm.tuple.Fields;
 
 
-public class JSONScheme implements Scheme {
+public class SimpleJSONScheme implements Scheme {
     private static final long serialVersionUID = -7734176307841199017L;
 
     private final String encoding;
 
 
-    public JSONScheme(String encoding) {
+    public SimpleJSONScheme(String encoding) {
         this.encoding = encoding;
     }
-    public JSONScheme() {
+    public SimpleJSONScheme() {
         this("UTF-8");
     }
 

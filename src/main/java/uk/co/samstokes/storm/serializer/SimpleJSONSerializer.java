@@ -15,7 +15,7 @@ import org.json.simple.parser.ParseException;
 
 import backtype.storm.serialization.ISerialization;
 
-public class JSONSerializer implements ISerialization<Object> {
+public class SimpleJSONSerializer implements ISerialization<Object> {
     public static final String ENCODING = "UTF-8";
 
     @SuppressWarnings("rawtypes")
