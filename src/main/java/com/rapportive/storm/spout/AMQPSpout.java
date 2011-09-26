@@ -1,4 +1,4 @@
-package uk.co.samstokes.storm.spout;
+package com.rapportive.storm.spout;
 
 import java.io.IOException;
 import java.util.Map;

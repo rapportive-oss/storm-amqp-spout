@@ -1,4 +1,4 @@
-package uk.co.samstokes.storm.serializer;
+package com.rapportive.storm.serializer;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

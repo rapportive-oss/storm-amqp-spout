@@ -1,4 +1,4 @@
-package uk.co.samstokes.storm.scheme;
+package com.rapportive.storm.scheme;
 
 import java.io.UnsupportedEncodingException;
 
