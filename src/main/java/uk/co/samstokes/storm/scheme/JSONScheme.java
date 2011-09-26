@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.json.simple.JSONValue;
+import org.json.simple.parser.ParseException;
 
 import backtype.storm.spout.Scheme;
 
@@ -34,7 +35,12 @@ public class JSONScheme implements Scheme {
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
-        final Object json = JSONValue.parse(chars);
+        final Object json;
+        try {
+            json = JSONValue.parseWithException(chars);
+        } catch (ParseException e) {
+          throw new RuntimeException(e);
+        }
         return Collections.singletonList(json);
     }
 
