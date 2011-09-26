@@ -39,7 +39,7 @@ public class SimpleJSONScheme implements Scheme {
         try {
             json = JSONValue.parseWithException(chars);
         } catch (ParseException e) {
-          throw new RuntimeException(e);
+          throw new RuntimeException(e); // TODO this is a bit impolite
         }
         return Collections.singletonList(json);
     }
