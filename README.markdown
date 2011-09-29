@@ -13,7 +13,7 @@ class:
 You'll need to provide a
 [Scheme](http://nathanmarz.github.com/storm/doc/backtype/storm/spout/Scheme.html)
 to tell `AMQPSpout` how to interpret the messages and turn them into Storm
-tuples.  See e.g. [storm-json](http://rapportive-oss.github.com/storm-json) if
+tuples.  See e.g. [storm-json](https://github.com/rapportive-oss/storm-json) if
 your messages are JSON.
 
 ## Documentation ##
