@@ -4,7 +4,7 @@ storm-amqp-spout allows a [Storm](https://github.com/nathanmarz/storm) topology
 to consume an AMQP exchange as an input source.  It currently provides one
 class:
 
- * [AMQPSpout](http://code.rapportive.com/storm-amqp/doc/com/rapportive/storm/spout/AMQPSpout.html):
+ * [AMQPSpout](http://code.rapportive.com/storm-amqp-spout/doc/com/rapportive/storm/spout/AMQPSpout.html):
    an implementation of
    [`backtype.storm.topology.IRichSpout`](http://nathanmarz.github.com/storm/doc/backtype/storm/topology/IRichSpout.html)
    that connects to an AMQP broker and consumes the messages published to a
