@@ -1,7 +1,8 @@
 # storm-amqp-spout: AMQP input source for Storm #
 
-storm-amqp-spout allows a Storm topology to consume an AMQP exchange as an
-input source.  It currently provides one class:
+storm-amqp-spout allows a [Storm](https://github.com/nathanmarz/storm) topology
+to consume an AMQP exchange as an input source.  It currently provides one
+class:
 
  * [AMQPSpout](http://code.rapportive.com/storm-amqp/doc/com/rapportive/storm/spout/AMQPSpout.html):
    an implementation of
