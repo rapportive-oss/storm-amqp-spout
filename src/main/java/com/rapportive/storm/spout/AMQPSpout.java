@@ -3,6 +3,8 @@ package com.rapportive.storm.spout;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
+
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
@@ -12,7 +14,6 @@ import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichSpout;
 import backtype.storm.topology.OutputFieldsDeclarer;
-
 
 /**
  * Spout to feed messages into Storm from an AMQP exchange.
@@ -49,6 +50,8 @@ import backtype.storm.topology.OutputFieldsDeclarer;
  */
 public class AMQPSpout implements IRichSpout {
     private static final long serialVersionUID = 11258942292629263L;
+
+    private static final Logger log = Logger.getLogger(AMQPSpout.class);
 
     private static final long WAIT_FOR_NEXT_MESSAGE = 50L;
 
@@ -119,8 +122,7 @@ public class AMQPSpout implements IRichSpout {
               amqpChannel.close();
             }
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            log.warn("Error closing AMQP channel", e);
         }
 
         try {
@@ -128,8 +130,7 @@ public class AMQPSpout implements IRichSpout {
               amqpConnection.close();
             }
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            log.warn("Error closing AMQP connection", e);
         }
     }
 
@@ -165,8 +166,7 @@ public class AMQPSpout implements IRichSpout {
 
             setupAMQP();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            log.error("AMQP setup failed", e);
         }
     }
 
