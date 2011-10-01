@@ -18,6 +18,9 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 /**
  * Spout to feed messages into Storm from an AMQP exchange.
  *
+ * Each message published to the exchange that matches the supplied routing key
+ * will be emitted as a Storm tuple.
+ *
  * This should not currently be used where guaranteed message processing is
  * required, because of two limitations:
  *
