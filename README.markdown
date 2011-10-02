@@ -55,21 +55,15 @@ completely between releases.  Pull requests, patches and bug reports are very
 welcome.
 
 This should not currently be used where guaranteed message processing is
-required, because of two limitations:
-
-1. Uses a temporary queue to bind to the specified exchange when the topology
-calls
+required, because it binds to the exchange using a temporary queue when the
+topology calls
 [`open()`](http://nathanmarz.github.com/storm/doc/backtype/storm/spout/ISpout.html#open(java.util.Map,%20backtype.storm.task.TopologyContext,%20backtype.storm.spout.SpoutOutputCollector))
-on the spout, so it will only receive messages published to the exchange after
-the call to `open()`, and if the spout worker restarts or the topology is
-killed, it will not receive any messages published while the worker or topology
-is down.
+on the spout.  This means it will only receive messages published to the
+exchange after the call to `open()`, and if the spout worker restarts or the
+topology is killed, it will not receive any messages published while the worker
+or topology is down.
 
-2. Currently auto-acks all consumed messages with the AMQP broker, and does not
-implement Storm's reliability API, so if processing a message fails it will
-simply be discarded.
-
-Limitation 1 also means this spout cannot currently be distributed among
+For the same reason, this spout cannot currently be distributed among
 multiple workers (each worker gets its own exclusive queue, so multiple
 workers would each receive their own copy of every message).
 
