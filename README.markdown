@@ -57,7 +57,7 @@ welcome.
 This should not currently be used where guaranteed message processing is
 required, because it binds to the exchange using a temporary queue when the
 topology calls
-[`open()`](http://nathanmarz.github.com/storm/doc/backtype/storm/spout/ISpout.html#open(java.util.Map,%20backtype.storm.task.TopologyContext,%20backtype.storm.spout.SpoutOutputCollector))
+[`open()`](http://nathanmarz.github.com/storm/doc/backtype/storm/spout/ISpout.html#open(java.util.Map,%20backtype.storm.task.TopologyContext,%20backtype.storm.spout.SpoutOutputCollector\))
 on the spout.  This means it will only receive messages published to the
 exchange after the call to `open()`, and if the spout worker restarts or the
 topology is killed, it will not receive any messages published while the worker
