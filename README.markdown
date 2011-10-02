@@ -72,5 +72,7 @@ guaranteed message processing, distributed across any number of workers.
 These improvements may require API changes (e.g. to specify the name of an
 existing queue to consume, rather than an exchange to bind to).
 
+## Compatibility ##
+
 `AMQPSpout` has been tested with RabbitMQ 2.3.1 and 2.6.1.  It should probably work with other
 versions and other AMQP brokers.
