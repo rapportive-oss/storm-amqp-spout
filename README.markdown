@@ -40,7 +40,7 @@ To use in your `pom.xml`:
     <dependency>
       <groupId>com.rapportive</groupId>
       <artifactId>storm-amqp-spout</artifactId>
-      <version>0.0.1</version>
+      <version>0.0.2-SNAPSHOT</version>
     </dependency>
     <!-- ... -->
   </dependencies>
