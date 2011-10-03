@@ -47,7 +47,7 @@ public class AMQPSpout implements IRichSpout {
 
     private static final Logger log = Logger.getLogger(AMQPSpout.class);
 
-    private static final long WAIT_FOR_NEXT_MESSAGE = 50L;
+    private static final long WAIT_FOR_NEXT_MESSAGE = 1L;
 
     private final String amqpHost;
     private final int amqpPort;
@@ -159,16 +159,14 @@ public class AMQPSpout implements IRichSpout {
     @Override
     public void nextTuple() {
         if (amqpConsumer != null) {
-            while (true) {
-                try {
-                    final QueueingConsumer.Delivery delivery = amqpConsumer.nextDelivery(WAIT_FOR_NEXT_MESSAGE);
-                    if (delivery == null) break;
-                    final long deliveryTag = delivery.getEnvelope().getDeliveryTag();
-                    final byte[] message = delivery.getBody();
-                    collector.emit(serialisationScheme.deserialize(message), deliveryTag);
-                } catch (InterruptedException e) {
-                    break;
-                }
+            try {
+                final QueueingConsumer.Delivery delivery = amqpConsumer.nextDelivery(WAIT_FOR_NEXT_MESSAGE);
+                if (delivery == null) return;
+                final long deliveryTag = delivery.getEnvelope().getDeliveryTag();
+                final byte[] message = delivery.getBody();
+                collector.emit(serialisationScheme.deserialize(message), deliveryTag);
+            } catch (InterruptedException e) {
+                // interrupted while waiting for message, big deal
             }
         }
     }
