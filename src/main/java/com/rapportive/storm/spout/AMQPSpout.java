@@ -187,6 +187,11 @@ public class AMQPSpout implements IRichSpout {
                 final long deliveryTag = delivery.getEnvelope().getDeliveryTag();
                 final byte[] message = delivery.getBody();
                 collector.emit(serialisationScheme.deserialize(message), deliveryTag);
+                /*
+                 * TODO what to do about malformed messages? Skip?
+                 * Avoid infinite retry!
+                 * Maybe we should output them on a separate stream.
+                 */
             } catch (InterruptedException e) {
                 // interrupted while waiting for message, big deal
             }
