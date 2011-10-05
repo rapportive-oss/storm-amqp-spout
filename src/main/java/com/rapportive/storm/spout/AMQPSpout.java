@@ -18,27 +18,27 @@ import backtype.storm.topology.OutputFieldsDeclarer;
 /**
  * Spout to feed messages into Storm from an AMQP exchange.
  *
- * Each message published to the exchange that matches the supplied routing key
- * will be emitted as a Storm tuple.  The message will be acked or rejected
+ * <p>Each message published to the exchange that matches the supplied routing
+ * key will be emitted as a Storm tuple.  The message will be acked or rejected
  * once the topology has respectively fully processed or failed the
- * corresponding tuple.
+ * corresponding tuple.</p>
  *
- * This should not currently be used where guaranteed message processing is
+ * <p>This should not currently be used where guaranteed message processing is
  * required, because it binds to the exchange using a temporary queue when the
  * topology calls <tt>open()</tt> on the spout.  This means it will only
  * receive messages published to the exchange after the call to
  * <tt>open()</tt>, and if the spout worker restarts or the topology is killed,
  * it will not receive any messages published while the worker or topology is
- * down.
+ * down.</p>
  *
- * For the same reason, this spout cannot currently be distributed among
+ * <p>For the same reason, this spout cannot currently be distributed among
  * multiple workers (each worker gets its own exclusive queue, so multiple
- * workers would each receive their own copy of every message).
+ * workers would each receive their own copy of every message).</p>
  *
- * Improvements are planned to overcome both these limitations and support
+ * <p>Improvements are planned to overcome both these limitations and support
  * guaranteed message processing, distributed across any number of workers.
  * These improvements may require API changes (e.g. to specify the name of an
- * existing queue to consume, rather than an exchange to bind to).
+ * existing queue to consume, rather than an exchange to bind to).</p>
  *
  * @author Sam Stokes (sam@rapportive.com)
  */
