@@ -12,9 +12,9 @@ class:
 
 You'll need to provide a
 [Scheme](http://nathanmarz.github.com/storm/doc/backtype/storm/spout/Scheme.html)
-to tell `AMQPSpout` how to interpret the messages and turn them into Storm
-tuples.  See e.g. [storm-json](https://github.com/rapportive-oss/storm-json) if
-your messages are JSON.
+to tell AMQPSpout how to interpret the messages and turn them into Storm tuples.
+See e.g. [storm-json](https://github.com/rapportive-oss/storm-json) if your
+messages are JSON.
 
 ## Documentation ##
 
@@ -74,5 +74,5 @@ existing queue to consume, rather than an exchange to bind to).
 
 ## Compatibility ##
 
-`AMQPSpout` has been tested with RabbitMQ 2.3.1 and 2.6.1.  It should probably work with other
+AMQPSpout has been tested with RabbitMQ 2.3.1 and 2.6.1.  It should probably work with other
 versions and other AMQP brokers.
