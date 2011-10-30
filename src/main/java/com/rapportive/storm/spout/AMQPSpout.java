@@ -5,10 +5,14 @@ import java.util.Map;
 
 import org.apache.log4j.Logger;
 
+import com.rabbitmq.client.AMQP.Queue;
+
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.QueueingConsumer;
+
+import com.rapportive.storm.amqp.QueueDeclaration;
 import backtype.storm.spout.Scheme;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
@@ -16,34 +20,32 @@ import backtype.storm.topology.IRichSpout;
 import backtype.storm.topology.OutputFieldsDeclarer;
 
 /**
- * Spout to feed messages into Storm from an AMQP exchange.
+ * Spout to feed messages into Storm from an AMQP queue.  Each message routed
+ * to the queue will be emitted as a Storm tuple.  The message will be acked or
+ * rejected once the topology has respectively fully processed or failed the
+ * corresponding tuple.
  *
- * <p>Each message published to the exchange that matches the supplied routing
- * key will be emitted as a Storm tuple.  The message will be acked or rejected
- * once the topology has respectively fully processed or failed the
- * corresponding tuple.</p>
+ * <p><strong>N.B.</strong> if you need to guarantee all messages are reliably
+ * processed, you should have AMQPSpout consume from a queue that is
+ * <em>not</em> set as 'exclusive' or 'auto-delete': otherwise if the spout
+ * task crashes or is restarted, the queue will be deleted and any messages in
+ * it lost, as will any messages published while the task remains down.  See
+ * {@link com.rapportive.storm.amqp.SharedQueueWithBinding} to declare a shared
+ * queue that allows for guaranteed processing.  (For prototyping, an
+ * {@link com.rapportive.storm.amqp.ExclusiveQueueWithBinding} may be
+ * simpler to manage.)</p>
  *
  * <p>This consumes messages from AMQP asynchronously, so it may receive
  * messages before Storm requests them as tuples; therefore it buffers messages
  * in an internal queue.  To avoid this buffer growing large and consuming too
  * much RAM, set {@link #CONFIG_PREFETCH_COUNT}.</p>
  *
- * <p>This should not currently be used where guaranteed message processing is
- * required, because it binds to the exchange using a temporary queue when the
- * topology calls <tt>open()</tt> on the spout.  This means it will only
- * receive messages published to the exchange after the call to
- * <tt>open()</tt>, and if the spout worker restarts or the topology is killed,
- * it will not receive any messages published while the worker or topology is
- * down.</p>
+ * <p>This spout can be distributed among multiple workers, depending on the
+ * queue declaration: see {@link QueueDeclaration#isParallelConsumable}.</p>
  *
- * <p>For the same reason, this spout cannot currently be distributed among
- * multiple workers (each worker gets its own exclusive queue, so multiple
- * workers would each receive their own copy of every message).</p>
- *
- * <p>Improvements are planned to overcome both these limitations and support
- * guaranteed message processing, distributed across any number of workers.
- * These improvements may require API changes (e.g. to specify the name of an
- * existing queue to consume, rather than an exchange to bind to).</p>
+ * @see QueueDeclaration
+ * @see com.rapportive.storm.amqp.SharedQueueWithBinding
+ * @see com.rapportive.storm.amqp.ExclusiveQueueWithBinding
  *
  * @author Sam Stokes (sam@rapportive.com)
  */
@@ -76,8 +78,8 @@ public class AMQPSpout implements IRichSpout {
     private final String amqpUsername;
     private final String amqpPassword;
     private final String amqpVhost;
-    private final String amqpExchange;
-    private final String amqpRoutingKey;
+
+    private final QueueDeclaration queueDeclaration;
 
     private final Scheme serialisationScheme;
 
@@ -92,29 +94,27 @@ public class AMQPSpout implements IRichSpout {
     /**
      * Create a new AMQP spout.  When
      * {@link #open(Map, TopologyContext, SpoutOutputCollector)} is called, it
-     * will create a new server-named, exclusive, auto-delete queue, bind it to
-     * the specified exchange on the specified server with the specified
-     * routing key, and start consuming messages.  It will use the provided
-     * <tt>scheme</tt> to deserialise each AMQP message into a Storm tuple.
+     * will declare a queue according to the specified
+     * <tt>queueDeclaration</tt>, subscribe to the queue, and start consuming
+     * messages.  It will use the provided <tt>scheme</tt> to deserialise each
+     * AMQP message into a Storm tuple.
      *
      * @param host  hostname of the AMQP broker node
      * @param port  port number of the AMQP broker node
      * @param username  username to log into to the broker
      * @param password  password to authenticate to the broker
      * @param vhost  vhost on the broker
-     * @param exchange  exchange to bind to
-     * @param routingKey  routing key for the binding
+     * @param queueDeclaration  declaration of the queue / exchange bindings
      * @param scheme  {@link backtype.storm.spout.Scheme} used to deserialise
      *          each AMQP message into a Storm tuple
      */
-    public AMQPSpout(String host, int port, String username, String password, String vhost, String exchange, String routingKey, Scheme scheme) {
+    public AMQPSpout(String host, int port, String username, String password, String vhost, QueueDeclaration queueDeclaration, Scheme scheme) {
         this.amqpHost = host;
         this.amqpPort = port;
         this.amqpUsername = username;
         this.amqpPassword = password;
         this.amqpVhost = vhost;
-        this.amqpExchange = exchange;
-        this.amqpRoutingKey = routingKey;
+        this.queueDeclaration = queueDeclaration;
 
         this.serialisationScheme = scheme;
     }
@@ -234,32 +234,12 @@ public class AMQPSpout implements IRichSpout {
         log.info("Setting basic.qos prefetch-count to " + prefetchCount);
         amqpChannel.basicQos(prefetchCount);
 
-        amqpChannel.exchangeDeclarePassive(amqpExchange);
-
-        /*
-         * This declares an exclusive, auto-delete, server-named queue.  It'll
-         * be deleted when this connection closes, e.g. if the spout worker
-         * process gets restarted.  That means we won't receive messages sent
-         * before the connection was opened or after it was closed, which may
-         * not be the desired behaviour.
-         *
-         * To avoid this, we want a named queue that can stick around while we
-         * get rebooted.  That's hard to do without risking clashing with queue
-         * names on the server.  Maybe we should have an overridable method for
-         * declaring the queue?
-         *
-         * This actually affects isDistributed() - if we have a named queue,
-         * then several workers can share the same queue, and the broker will
-         * round-robin between them.  If we use server-named queues, each
-         * worker will get its own, so the broker will broadcast to all of them
-         * instead.
-         */
-        final String queue = amqpChannel.queueDeclare().getQueue();
-
-        amqpChannel.queueBind(queue, amqpExchange, amqpRoutingKey);
+        final Queue.DeclareOk queue = queueDeclaration.declare(amqpChannel);
+        final String queueName = queue.getQueue();
+        log.info("Consuming queue " + queueName);
 
         this.amqpConsumer = new QueueingConsumer(amqpChannel);
-        this.amqpConsumerTag = amqpChannel.basicConsume(queue, false /* no auto-ack */, amqpConsumer);
+        this.amqpConsumerTag = amqpChannel.basicConsume(queueName, false /* no auto-ack */, amqpConsumer);
     }
 
 
@@ -270,12 +250,13 @@ public class AMQPSpout implements IRichSpout {
 
 
     /**
-     * Currently this spout can't be distributed, because each call to open()
-     * creates a new queue and binds it to the exchange, so if there were
-     * multiple workers they would each receive every message.
+     * This spout can be distributed among multiple workers if the
+     * {@link QueueDeclaration} supports it.
+     *
+     * @see QueueDeclaration#isParallelConsumable()
      */
     @Override
     public boolean isDistributed() {
-        return false;
+        return queueDeclaration.isParallelConsumable();
     }
 }

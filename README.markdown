@@ -1,13 +1,19 @@
 # storm-amqp-spout: AMQP input source for Storm #
 
-storm-amqp-spout allows a [Storm](https://github.com/nathanmarz/storm) topology
-to consume an AMQP exchange as an input source.  It currently provides one
-class:
+storm-amqp-spout allows a [Storm][] topology to consume an AMQP queue as an
+input source.  It currently provides:
 
  * <tt>[AMQPSpout][]</tt>: an implementation of
    [`backtype.storm.topology.IRichSpout`][IRichSpout] that connects to an AMQP
-   broker, consumes the messages published to a specified AMQP exchange and
-   emits them as Storm tuples.
+   broker, consumes the messages routed to a specified AMQP queue and emits them
+   as Storm tuples.
+ * <tt>[QueueDeclaration][]</tt>: an interface that encapsulates declaring an
+   AMQP queue and setting up any exchange bindings it requires, used by
+   AMQPSpout to set up the queue to consume.
+ * <tt>[ExclusiveQueueWithBinding][]</tt>: a QueueDeclaration suitable for
+   prototyping and one-off analytics use cases.
+ * <tt>[SharedQueueWithBinding][]</tt>: a QueueDeclaration suitable for
+   production use cases needing guaranteed processing.
 
 You'll need to provide a [Scheme][] to tell AMQPSpout how to interpret the
 messages and turn them into Storm tuples.  See e.g. [storm-json][] if your
@@ -51,22 +57,13 @@ This is very early software.  It may break and the API is liable to change
 completely between releases.  Pull requests, patches and bug reports are very
 welcome.
 
-This should not currently be used where guaranteed message processing is
-required, because it binds to the exchange using a temporary queue when the
-topology calls <tt>[open()][]</tt> on the spout.  This means it will only
-receive messages published to the exchange after the call to
-<tt>[open()][]</tt>, and if the spout worker restarts or the topology is
-killed, it will not receive any messages published while the worker or topology
-is down.
-
-For the same reason, this spout cannot currently be distributed among
-multiple workers (each worker gets its own exclusive queue, so multiple
-workers would each receive their own copy of every message).
-
-Improvements are planned to overcome both these limitations and support
-guaranteed message processing, distributed across any number of workers.
-These improvements may require API changes (e.g. to specify the name of an
-existing queue to consume, rather than an exchange to bind to).
+**N.B.** if you need to guarantee all messages are reliably processed, you
+should have AMQPSpout consume from a queue that is *not* set as 'exclusive' or
+'auto-delete': otherwise if the spout task crashes or is restarted, the queue
+will be deleted and any messages in it lost, as will any messages published
+while the task remains down.  See [SharedQueueWithBinding][] to declare a
+shared queue that allows for guaranteed processing.  (For prototyping, an
+[ExclusiveQueueWithBinding][] may be simpler to manage.)
 
 ## Compatibility ##
 
@@ -78,11 +75,15 @@ versions and other AMQP brokers.
     "Storm project homepage"
 [IRichSpout]: <http://nathanmarz.github.com/storm/doc/backtype/storm/topology/IRichSpout.html>
     "Javadoc for backtype.storm.topology.IRichSpout"
-[open()]: <http://nathanmarz.github.com/storm/doc/backtype/storm/spout/ISpout.html#open(java.util.Map,%20backtype.storm.task.TopologyContext,%20backtype.storm.spout.SpoutOutputCollector\)>
-    "Javadoc for backtype.storm.spout.ISpout.open()"
 [Scheme]: <http://nathanmarz.github.com/storm/doc/backtype/storm/spout/Scheme.html>
     "Javadoc for backtype.storm.spout.Scheme"
 [AMQPSpout]: <http://code.rapportive.com/storm-amqp-spout/doc/com/rapportive/storm/spout/AMQPSpout.html>
     "Javadoc for AMQPSpout"
+[QueueDeclaration]: <http://code.rapportive.com/storm-amqp-spout/doc/com/rapportive/storm/amqp/QueueDeclaration.html>
+    "Javadoc for QueueDeclaration"
+[ExclusiveQueueWithBinding]: <http://code.rapportive.com/storm-amqp-spout/doc/com/rapportive/storm/amqp/ExclusiveQueueWithBinding.html>
+    "Javadoc for ExclusiveQueueWithBinding"
+[SharedQueueWithBinding]: <http://code.rapportive.com/storm-amqp-spout/doc/com/rapportive/storm/amqp/SharedQueueWithBinding.html>
+    "Javadoc for SharedQueueWithBinding"
 [storm-json]: <https://github.com/rapportive-oss/storm-json>
     "JSON {,de}serialisation support for Storm"
