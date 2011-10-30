@@ -64,7 +64,7 @@ public class AMQPSpout implements IRichSpout {
      * message buffer grows.</p>
      *
      * <p>AMQP allows a prefetch-count of zero, indicating unlimited delivery,
-     * but that is not allowed here to avoid unbounded buffer growth.)</p>
+     * but that is not allowed here to avoid unbounded buffer growth.</p>
      */
     public static final String CONFIG_PREFETCH_COUNT = "amqp.prefetch.count";
     private static final long DEFAULT_PREFETCH_COUNT = 100;
