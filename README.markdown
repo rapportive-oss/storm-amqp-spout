@@ -7,8 +7,8 @@ class:
  * [AMQPSpout](http://code.rapportive.com/storm-amqp-spout/doc/com/rapportive/storm/spout/AMQPSpout.html):
    an implementation of
    [`backtype.storm.topology.IRichSpout`](http://nathanmarz.github.com/storm/doc/backtype/storm/topology/IRichSpout.html)
-   that connects to an AMQP broker and consumes the messages published to a
-   specified AMQP exchange.
+   that connects to an AMQP broker, consumes the messages published to a
+   specified AMQP exchange and emits them as Storm tuples.
 
 You'll need to provide a
 [Scheme](http://nathanmarz.github.com/storm/doc/backtype/storm/spout/Scheme.html)
