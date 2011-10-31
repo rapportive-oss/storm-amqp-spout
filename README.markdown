@@ -66,6 +66,15 @@ while the task remains down.  See [SharedQueueWithBinding][] to declare a
 shared queue that allows for guaranteed processing.  (For prototyping, an
 [ExclusiveQueueWithBinding][] may be simpler to manage.)
 
+This does not currently handle malformed messages very well: the spout worker
+will crash if the provided [Scheme][] fails to deserialise a message.
+
+This does not currently support retrying messages in the event of transient
+failure to process: any message which the topology fails to process will simply
+be dropped.  This is to prevent infinite redelivery in the event of
+non-transient failures (e.g. malformed messages, though see previous caveat!).
+This will probably be made configurable in a future release.
+
 ## Compatibility ##
 
 AMQPSpout has been tested with RabbitMQ 2.3.1 and 2.6.1.  It should probably work with other

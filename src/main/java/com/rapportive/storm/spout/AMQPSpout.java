@@ -35,6 +35,10 @@ import backtype.storm.topology.OutputFieldsDeclarer;
  * {@link com.rapportive.storm.amqp.ExclusiveQueueWithBinding} may be
  * simpler to manage.)</p>
  *
+ * <p><strong>N.B.</strong> this does not currently handle malformed messages
+ * (which cannot be deserialised by the provided {@link Scheme}) very well:
+ * the spout worker will crash if it fails to serialise a message.</p>
+ *
  * <p>This consumes messages from AMQP asynchronously, so it may receive
  * messages before Storm requests them as tuples; therefore it buffers messages
  * in an internal queue.  To avoid this buffer growing large and consuming too
@@ -180,6 +184,8 @@ public class AMQPSpout implements IRichSpout {
      * redelivery in the event of non-transient failures (e.g. malformed
      * messages).  However it means that messages will <em>not</em> be retried
      * in the event of transient failures.</p>
+     *
+     * <p><strong>TODO</strong> make this configurable.</p>
      */
     @Override
     public void fail(Object msgId) {
