@@ -53,7 +53,8 @@ To use in your `pom.xml`:
 
 ## Caveats ##
 
-This is very early software.  It may break and the API is liable to change
+This is early software.  It has been used at production volumes, but not yet
+for business-critical use cases.  It may break and the API is liable to change
 completely between releases.  Pull requests, patches and bug reports are very
 welcome.
 
