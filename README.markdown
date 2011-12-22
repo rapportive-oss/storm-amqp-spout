@@ -43,7 +43,7 @@ To use in your `pom.xml`:
     <dependency>
       <groupId>com.rapportive</groupId>
       <artifactId>storm-amqp-spout</artifactId>
-      <version>0.1.0</version>
+      <version>0.1.1</version>
     </dependency>
     <!-- ... -->
   </dependencies>
@@ -77,7 +77,7 @@ This will probably be made configurable in a future release.
 
 ## Compatibility ##
 
-AMQPSpout has been tested with RabbitMQ 2.3.1 and 2.6.1.  It should probably work with other
+AMQPSpout has been tested with RabbitMQ 2.3.1, 2.6.1 and 2.7.0.  It should probably work with other
 versions and other AMQP brokers.
 
 
