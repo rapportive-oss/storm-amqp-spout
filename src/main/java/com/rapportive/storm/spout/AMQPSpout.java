@@ -11,6 +11,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.QueueingConsumer;
+import com.rabbitmq.client.ShutdownSignalException;
 
 import com.rapportive.storm.amqp.QueueDeclaration;
 import backtype.storm.spout.Scheme;
@@ -18,6 +19,8 @@ import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichSpout;
 import backtype.storm.topology.OutputFieldsDeclarer;
+
+import backtype.storm.utils.Utils;
 
 /**
  * Spout to feed messages into Storm from an AMQP queue.  Each message routed
@@ -82,6 +85,12 @@ public class AMQPSpout implements IRichSpout {
      */
     public static final long WAIT_FOR_NEXT_MESSAGE = 1L;
 
+    /**
+     * Time in milliseconds to wait after losing connection to the AMQP broker
+     * before attempting to reconnect.
+     */
+    public static final long WAIT_AFTER_SHUTDOWN_SIGNAL = 10000L;
+
     private final String amqpHost;
     private final int amqpPort;
     private final String amqpUsername;
@@ -98,6 +107,8 @@ public class AMQPSpout implements IRichSpout {
     private transient String amqpConsumerTag;
 
     private SpoutOutputCollector collector;
+
+    private int prefetchCount;
 
 
     /**
@@ -225,6 +236,10 @@ public class AMQPSpout implements IRichSpout {
                  * Avoid infinite retry!
                  * Maybe we should output them on a separate stream.
                  */
+            } catch (ShutdownSignalException e) {
+                log.warn("AMQP connection dropped, will attempt to reconnect...");
+                Utils.sleep(WAIT_AFTER_SHUTDOWN_SIGNAL);
+                reconnect();
             } catch (InterruptedException e) {
                 // interrupted while waiting for message, big deal
             }
@@ -245,18 +260,21 @@ public class AMQPSpout implements IRichSpout {
         } else if (prefetchCount < 1) {
             throw new IllegalArgumentException(CONFIG_PREFETCH_COUNT + " must be at least 1");
         }
+        this.prefetchCount = prefetchCount.intValue();
 
         try {
             this.collector = collector;
 
-            setupAMQP(prefetchCount.intValue());
+            setupAMQP();
         } catch (IOException e) {
             log.error("AMQP setup failed", e);
         }
     }
 
 
-    private void setupAMQP(int prefetchCount) throws IOException {
+    private void setupAMQP() throws IOException {
+        final int prefetchCount = this.prefetchCount;
+
         final ConnectionFactory connectionFactory = new ConnectionFactory();
 
         connectionFactory.setHost(amqpHost);
@@ -277,6 +295,16 @@ public class AMQPSpout implements IRichSpout {
 
         this.amqpConsumer = new QueueingConsumer(amqpChannel);
         this.amqpConsumerTag = amqpChannel.basicConsume(queueName, false /* no auto-ack */, amqpConsumer);
+    }
+
+
+    private void reconnect() {
+        log.info("Reconnecting to AMQP broker...");
+        try {
+            setupAMQP();
+        } catch (IOException e) {
+            log.warn("Failed to reconnect to AMQP broker", e);
+        }
     }
 
 
