@@ -1,26 +1,18 @@
 package com.rapportive.storm.spout;
 
-import java.io.IOException;
-import java.util.Map;
-
-import org.apache.log4j.Logger;
-
-import com.rabbitmq.client.AMQP.Queue;
-
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-import com.rabbitmq.client.QueueingConsumer;
-import com.rabbitmq.client.ShutdownSignalException;
-
-import com.rapportive.storm.amqp.QueueDeclaration;
 import backtype.storm.spout.Scheme;
 import backtype.storm.spout.SpoutOutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichSpout;
 import backtype.storm.topology.OutputFieldsDeclarer;
-
 import backtype.storm.utils.Utils;
+import com.rabbitmq.client.AMQP.Queue;
+import com.rabbitmq.client.*;
+import com.rapportive.storm.amqp.QueueDeclaration;
+import org.apache.log4j.Logger;
+
+import java.io.IOException;
+import java.util.Map;
 
 /**
  * Spout to feed messages into Storm from an AMQP queue.  Each message routed
@@ -324,8 +316,12 @@ public class AMQPSpout implements IRichSpout {
      *
      * @see QueueDeclaration#isParallelConsumable()
      */
-    @Override
     public boolean isDistributed() {
         return queueDeclaration.isParallelConsumable();
+    }
+
+    @Override
+    public Map<String, Object> getComponentConfiguration() {
+        return null;
     }
 }
