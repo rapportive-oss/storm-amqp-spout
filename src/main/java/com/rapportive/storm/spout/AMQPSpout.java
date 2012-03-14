@@ -342,15 +342,8 @@ public class AMQPSpout implements IRichSpout {
         declarer.declare(serialisationScheme.getOutputFields());
     }
 
-
-    /**
-     * This spout can be distributed among multiple workers if the
-     * {@link QueueDeclaration} supports it.
-     *
-     * @see QueueDeclaration#isParallelConsumable()
-     */
     @Override
-    public boolean isDistributed() {
-        return queueDeclaration.isParallelConsumable();
+    public Map<String, Object> getComponentConfiguration() {
+        return null;
     }
 }

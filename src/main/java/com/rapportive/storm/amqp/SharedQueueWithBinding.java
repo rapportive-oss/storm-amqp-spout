@@ -29,6 +29,7 @@ public class SharedQueueWithBinding implements QueueDeclaration {
     private final String queueName;
     private final String exchange;
     private final String routingKey;
+    private HAPolicy haPolicy;
 
     /**
      * Create a declaration of a named, durable, non-exclusive queue bound to
@@ -40,9 +41,24 @@ public class SharedQueueWithBinding implements QueueDeclaration {
      *                    receive all messages published to the exchange.
      */
     public SharedQueueWithBinding(String queueName, String exchange, String routingKey) {
+        this(queueName, exchange, routingKey, null);
+    }
+
+    /**
+     * Create a declaration of a named, durable, non-exclusive queue bound to
+     * the specified exchange.
+     *
+     * @param queueName  name of the queue to be declared.
+     * @param exchange  exchange to bind the queue to.
+     * @param routingKey  routing key for the exchange binding.  Use "#" to
+     *                    receive all messages published to the exchange.
+     * @param policy  high-availability policy to use
+     */
+    public SharedQueueWithBinding(String queueName, String exchange, String routingKey, HAPolicy policy) {
         this.queueName = queueName;
         this.exchange = exchange;
         this.routingKey = routingKey;
+        this.haPolicy = policy;
     }
 
     /**
@@ -63,7 +79,7 @@ public class SharedQueueWithBinding implements QueueDeclaration {
                 /* durable */ true,
                 /* non-exclusive */ false,
                 /* non-auto-delete */ false,
-                /* no arguments */ null);
+                haPolicy == null ? null /* no arguments */ : haPolicy.asQueueProperies());
 
         channel.queueBind(queue.getQueue(), exchange, routingKey);
 
