@@ -102,6 +102,7 @@ public class AMQPSpout implements IRichSpout {
 
     private final Scheme serialisationScheme;
 
+    private transient boolean spoutActive = true;
     private transient Connection amqpConnection;
     private transient Channel amqpChannel;
     private transient QueueingConsumer amqpConsumer;
@@ -212,6 +213,22 @@ public class AMQPSpout implements IRichSpout {
         }
     }
 
+    /**
+     * Resumes a paused spout
+     */
+    public void activate() {
+        log.info("Unpausing spout");
+        spoutActive = true;
+    }
+
+    /**
+     * Pauses the spout
+     */
+    public void deactivate() {
+        log.info("Pausing spout");
+        spoutActive = false;
+    }
+
 
     /**
      * Tells the AMQP broker to drop (Basic.Reject) the message.
@@ -249,7 +266,7 @@ public class AMQPSpout implements IRichSpout {
      */
     @Override
     public void nextTuple() {
-        if (amqpConsumer != null) {
+        if (spoutActive && amqpConsumer != null) {
             try {
                 final QueueingConsumer.Delivery delivery = amqpConsumer.nextDelivery(WAIT_FOR_NEXT_MESSAGE);
                 if (delivery == null) return;
