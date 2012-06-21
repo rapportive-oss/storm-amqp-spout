@@ -204,6 +204,16 @@ public class AMQPSpout implements IRichSpout {
         }
     }
 
+    @Override
+    public void activate() {
+
+    }
+
+    @Override
+    public void deactivate() {
+
+    }
+
 
     /**
      * Tells the AMQP broker to drop (Basic.Reject) the message.

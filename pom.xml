@@ -13,7 +13,7 @@
     <dependency>
       <groupId>storm</groupId>
       <artifactId>storm</artifactId>
-      <version>0.7.0</version>
+      <version>0.7.3</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
