@@ -170,6 +170,8 @@ public class AMQPSpout implements IRichSpout {
                     amqpChannel.basicAck(deliveryTag, false /* not multiple */);
                 } catch (IOException e) {
                     log.warn("Failed to ack delivery-tag " + deliveryTag, e);
+                } catch (ShutdownSignalException e) {
+                    log.warn("AMQP connection failed. Failed to ack delivery-tag " + deliveryTag, e);
                 }
             }
         } else {
