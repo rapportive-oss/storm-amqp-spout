@@ -1,5 +1,19 @@
 # storm-amqp-spout: AMQP input source for Storm #
 
+## This is out of date!
+
+This is a rather old version of the spout that is not API-compatible with newer
+versions of Storm.  Various people have forked it to bring it up to date and add
+features:
+
+ * https://github.com/Xorlev/storm-amqp-spout
+ * https://github.com/dkincaid/storm-amqp-spout
+
+If you want your fork added to this list, or to contribute a description of
+your fork, please email sam@rapportive.com.
+
+## Description
+
 storm-amqp-spout allows a [Storm][] topology to consume an AMQP queue as an
 input source.  It currently provides:
 
