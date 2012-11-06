@@ -46,8 +46,9 @@ public class ExclusiveQueueWithBinding implements QueueDeclaration {
     }
 
     /**
-     * Verifies the exchange exists, creates an exclusive, server-named queue
-     * and binds it to the exchange.
+     * Creates an exclusive, server-named queue. Declares and binds
+     * the queue to the specified exchange unless it's the default exchange
+     * (which doesn't need declaring nor binding)
      *
      * @return the server's response to the successful queue declaration (you
      *         can use this to discover the name of the queue).
@@ -57,11 +58,12 @@ public class ExclusiveQueueWithBinding implements QueueDeclaration {
      */
     @Override
     public Queue.DeclareOk declare(Channel channel) throws IOException {
-        channel.exchangeDeclarePassive(exchange);
-
         final Queue.DeclareOk queue = channel.queueDeclare();
 
-        channel.queueBind(queue.getQueue(), exchange, routingKey);
+        if (!exchange.isEmpty()) {
+            channel.exchangeDeclarePassive(exchange);
+            channel.queueBind(queue.getQueue(), exchange, routingKey);
+        }
 
         return queue;
     }

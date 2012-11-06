@@ -62,8 +62,9 @@ public class SharedQueueWithBinding implements QueueDeclaration {
     }
 
     /**
-     * Verifies the exchange exists, creates the named queue if it does not
-     * exist, and binds it to the exchange.
+     * Creates the named queue if it does not exist. Declares and binds
+     * the queue to the specified exchange unless it's the default exchange
+     * (which doesn't need declaring nor binding)
      *
      * @return the server's response to the successful queue declaration.
      *
@@ -72,8 +73,6 @@ public class SharedQueueWithBinding implements QueueDeclaration {
      */
     @Override
     public Queue.DeclareOk declare(Channel channel) throws IOException {
-        channel.exchangeDeclarePassive(exchange);
-
         final Queue.DeclareOk queue = channel.queueDeclare(
                 queueName,
                 /* durable */ true,
@@ -81,7 +80,10 @@ public class SharedQueueWithBinding implements QueueDeclaration {
                 /* non-auto-delete */ false,
                 haPolicy == null ? null /* no arguments */ : haPolicy.asQueueProperies());
 
-        channel.queueBind(queue.getQueue(), exchange, routingKey);
+        if (!exchange.isEmpty()) {
+            channel.exchangeDeclarePassive(exchange);
+            channel.queueBind(queue.getQueue(), exchange, routingKey);
+        }
 
         return queue;
     }
