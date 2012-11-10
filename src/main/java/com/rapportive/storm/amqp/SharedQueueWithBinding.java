@@ -29,6 +29,7 @@ public class SharedQueueWithBinding implements QueueDeclaration {
     private final String queueName;
     private final String exchange;
     private final String routingKey;
+    private HAPolicy haPolicy;
 
     /**
      * Create a declaration of a named, durable, non-exclusive queue bound to
@@ -40,14 +41,30 @@ public class SharedQueueWithBinding implements QueueDeclaration {
      *                    receive all messages published to the exchange.
      */
     public SharedQueueWithBinding(String queueName, String exchange, String routingKey) {
-        this.queueName = queueName;
-        this.exchange = exchange;
-        this.routingKey = routingKey;
+        this(queueName, exchange, routingKey, null);
     }
 
     /**
-     * Verifies the exchange exists, creates the named queue if it does not
-     * exist, and binds it to the exchange.
+     * Create a declaration of a named, durable, non-exclusive queue bound to
+     * the specified exchange.
+     *
+     * @param queueName  name of the queue to be declared.
+     * @param exchange  exchange to bind the queue to.
+     * @param routingKey  routing key for the exchange binding.  Use "#" to
+     *                    receive all messages published to the exchange.
+     * @param policy  high-availability policy to use
+     */
+    public SharedQueueWithBinding(String queueName, String exchange, String routingKey, HAPolicy policy) {
+        this.queueName = queueName;
+        this.exchange = exchange;
+        this.routingKey = routingKey;
+        this.haPolicy = policy;
+    }
+
+    /**
+     * Creates the named queue if it does not exist. Declares and binds
+     * the queue to the specified exchange unless it's the default exchange
+     * (which doesn't need declaring nor binding)
      *
      * @return the server's response to the successful queue declaration.
      *
@@ -56,16 +73,17 @@ public class SharedQueueWithBinding implements QueueDeclaration {
      */
     @Override
     public Queue.DeclareOk declare(Channel channel) throws IOException {
-        channel.exchangeDeclarePassive(exchange);
-
         final Queue.DeclareOk queue = channel.queueDeclare(
                 queueName,
                 /* durable */ true,
                 /* non-exclusive */ false,
                 /* non-auto-delete */ false,
-                /* no arguments */ null);
+                haPolicy == null ? null /* no arguments */ : haPolicy.asQueueProperies());
 
-        channel.queueBind(queue.getQueue(), exchange, routingKey);
+        if (!exchange.isEmpty()) {
+            channel.exchangeDeclarePassive(exchange);
+            channel.queueBind(queue.getQueue(), exchange, routingKey);
+        }
 
         return queue;
     }
