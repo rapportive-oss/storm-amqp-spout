@@ -96,11 +96,13 @@ public class AMQPSpout implements IRichSpout {
     private final String amqpUsername;
     private final String amqpPassword;
     private final String amqpVhost;
+    private final boolean requeueOnFail;
 
     private final QueueDeclaration queueDeclaration;
 
     private final Scheme serialisationScheme;
 
+    private transient boolean spoutActive = true;
     private transient Connection amqpConnection;
     private transient Channel amqpChannel;
     private transient QueueingConsumer amqpConsumer;
@@ -110,6 +112,29 @@ public class AMQPSpout implements IRichSpout {
 
     private int prefetchCount;
 
+
+
+    /**
+     * Create a new AMQP spout.  When
+     * {@link #open(Map, TopologyContext, SpoutOutputCollector)} is called, it
+     * will declare a queue according to the specified
+     * <tt>queueDeclaration</tt>, subscribe to the queue, and start consuming
+     * messages.  It will use the provided <tt>scheme</tt> to deserialise each
+     * AMQP message into a Storm tuple. Note that failed messages will not be 
+     * requeued.
+     *
+     * @param host  hostname of the AMQP broker node
+     * @param port  port number of the AMQP broker node
+     * @param username  username to log into to the broker
+     * @param password  password to authenticate to the broker
+     * @param vhost  vhost on the broker
+     * @param queueDeclaration  declaration of the queue / exchange bindings
+     * @param scheme  {@link backtype.storm.spout.Scheme} used to deserialise
+     *          each AMQP message into a Storm tuple
+     */
+    public AMQPSpout(String host, int port, String username, String password, String vhost, QueueDeclaration queueDeclaration, Scheme scheme) {
+        this(host, port, username, password, vhost, queueDeclaration, scheme, false);
+    }
 
     /**
      * Create a new AMQP spout.  When
@@ -127,15 +152,17 @@ public class AMQPSpout implements IRichSpout {
      * @param queueDeclaration  declaration of the queue / exchange bindings
      * @param scheme  {@link backtype.storm.spout.Scheme} used to deserialise
      *          each AMQP message into a Storm tuple
+     * @param requeueOnFail  whether messages should be requeued on failure 
      */
-    public AMQPSpout(String host, int port, String username, String password, String vhost, QueueDeclaration queueDeclaration, Scheme scheme) {
+    public AMQPSpout(String host, int port, String username, String password, String vhost, QueueDeclaration queueDeclaration, Scheme scheme, boolean requeueOnFail) {
         this.amqpHost = host;
         this.amqpPort = port;
         this.amqpUsername = username;
         this.amqpPassword = password;
         this.amqpVhost = vhost;
         this.queueDeclaration = queueDeclaration;
-
+        this.requeueOnFail = requeueOnFail;
+        
         this.serialisationScheme = scheme;
     }
 
@@ -186,17 +213,32 @@ public class AMQPSpout implements IRichSpout {
         }
     }
 
+    /**
+     * Resumes a paused spout
+     */
+    public void activate() {
+        log.info("Unpausing spout");
+        spoutActive = true;
+    }
+
+    /**
+     * Pauses the spout
+     */
+    public void deactivate() {
+        log.info("Pausing spout");
+        spoutActive = false;
+    }
+
 
     /**
      * Tells the AMQP broker to drop (Basic.Reject) the message.
      *
-     * <p><strong>N.B.</strong> this does <em>not</em> requeue the message:
-     * failed messages will simply be dropped.  This is to prevent infinite
+     * requeueOnFail constructor parameter determines whether the message will be requeued.
+     * 
+     * <p><strong>N.B.</strong> There's a potential for infinite
      * redelivery in the event of non-transient failures (e.g. malformed
-     * messages).  However it means that messages will <em>not</em> be retried
-     * in the event of transient failures.</p>
+     * messages). 
      *
-     * <p><strong>TODO</strong> make this configurable.</p>
      */
     @Override
     public void fail(Object msgId) {
@@ -204,7 +246,7 @@ public class AMQPSpout implements IRichSpout {
             final long deliveryTag = (Long) msgId;
             if (amqpChannel != null) {
                 try {
-                    amqpChannel.basicReject(deliveryTag, false /* don't requeue */);
+                    amqpChannel.basicReject(deliveryTag, requeueOnFail);
                 } catch (IOException e) {
                     log.warn("Failed to reject delivery-tag " + deliveryTag, e);
                 }
@@ -224,7 +266,7 @@ public class AMQPSpout implements IRichSpout {
      */
     @Override
     public void nextTuple() {
-        if (amqpConsumer != null) {
+        if (spoutActive && amqpConsumer != null) {
             try {
                 final QueueingConsumer.Delivery delivery = amqpConsumer.nextDelivery(WAIT_FOR_NEXT_MESSAGE);
                 if (delivery == null) return;
@@ -317,15 +359,8 @@ public class AMQPSpout implements IRichSpout {
         declarer.declare(serialisationScheme.getOutputFields());
     }
 
-
-    /**
-     * This spout can be distributed among multiple workers if the
-     * {@link QueueDeclaration} supports it.
-     *
-     * @see QueueDeclaration#isParallelConsumable()
-     */
     @Override
-    public boolean isDistributed() {
-        return queueDeclaration.isParallelConsumable();
+    public Map<String, Object> getComponentConfiguration() {
+        return null;
     }
 }
